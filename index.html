@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live GPS Tracker - OpenStreetMap</title>
+  <!-- Leaflet CSS/JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    #map { width: 100%; height: 100vh; }
+    #controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    button { padding: 5px 10px; margin-top: 5px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="controls">
+    <h3>GPS Tracker</h3>
+    <p>آخرین موقعیت:</p>
+    <p id="last-update">دریافت نشده</p>
+    <button onclick="centerMap()">متمرکز کردن نقشه</button>
+  </div>
+
+  <script>
+    // تنظیمات اولیه نقشه
+    const map = L.map('map').setView([35.6892, 51.3890], 15); // مختصات تهران به عنوان نقطه شروع
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+
+    let marker = null;
+    let updateInterval = null;
+
+    // تابع افزودن/به‌روزرسانی مارکر
+    function updateLocation(lat, lng) {
+      const newLatLng = new L.LatLng(lat, lng);
+      
+      if (!marker) {
+        marker = L.marker(newLatLng).addTo(map)
+          .bindPopup(`موقعیت شما:<br>عرض: ${lat.toFixed(6)}<br>طول: ${lng.toFixed(6)}`);
+      } else {
+        marker.setLatLng(newLatLng);
+        marker.getPopup().setContent(`موقعیت شما:<br>عرض: ${lat.toFixed(6)}<br>طول: ${lng.toFixed(6)}`);
+      }
+      
+      map.panTo(newLatLng);
+      document.getElementById('last-update').innerHTML = `
+        عرض جغرافیایی: ${lat.toFixed(6)}<br>
+        طول جغرافیایی: ${lng.toFixed(6)}<br>
+        زمان: ${new Date().toLocaleTimeString()}
+      `;
+    }
+
+    // تابع پردازش داده از URL
+    function processURLParams() {
+      const params = new URLSearchParams(window.location.search);
+      const lat = parseFloat(params.get('lat'));
+      const lng = parseFloat(params.get('lng'));
+      
+      if (!isNaN(lat) && !isNaN(lng)) {
+        updateLocation(lat, lng);
+      }
+    }
+
+    // متمرکز کردن نقشه روی مارکر
+    function centerMap() {
+      if (marker) {
+        map.panTo(marker.getLatLng());
+      }
+    }
+
+    // اجرای اولیه
+    processURLParams();
+  </script>
+</body>
+</html>
