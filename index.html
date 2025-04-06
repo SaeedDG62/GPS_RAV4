@@ -1,87 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live GPS Tracker - OpenStreetMap</title>
-  <!-- Leaflet CSS/JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <title>GPS Tracker</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
   <style>
-    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-    #map { width: 100%; height: 100vh; }
-    #controls {
-      position: absolute;
-      top: 10px;
-      right: 10px;
+    #map { height: 100vh; }
+    .info-panel {
+      position: absolute; 
+      top: 10px; 
+      right: 10px; 
       z-index: 1000;
       background: white;
       padding: 10px;
       border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
     }
-    button { padding: 5px 10px; margin-top: 5px; }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <div id="controls">
-    <h3>GPS Tracker</h3>
-    <p>آخرین موقعیت:</p>
-    <p id="last-update">دریافت نشده</p>
-    <button onclick="centerMap()">متمرکز کردن نقشه</button>
+  <div class="info-panel">
+    <h3>موقعیت خودرو</h3>
+    <p>آخرین به‌روزرسانی: <span id="time">--:--:--</span></p>
+    <p>عرض جغرافیایی: <span id="lat">---</span></p>
+    <p>طول جغرافیایی: <span id="lng">---</span></p>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
   <script>
     // تنظیمات اولیه نقشه
-    const map = L.map('map').setView([35.6892, 51.3890], 15); // مختصات تهران به عنوان نقطه شروع
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(map);
-
+    const map = L.map('map').setView([35.6892, 51.3890], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    
     let marker = null;
-    let updateInterval = null;
+    let lastUpdate = 0;
 
-    // تابع افزودن/به‌روزرسانی مارکر
-    function updateLocation(lat, lng) {
-      const newLatLng = new L.LatLng(lat, lng);
-      
-      if (!marker) {
-        marker = L.marker(newLatLng).addTo(map)
-          .bindPopup(`موقعیت شما:<br>عرض: ${lat.toFixed(6)}<br>طول: ${lng.toFixed(6)}`);
-      } else {
-        marker.setLatLng(newLatLng);
-        marker.getPopup().setContent(`موقعیت شما:<br>عرض: ${lat.toFixed(6)}<br>طول: ${lng.toFixed(6)}`);
-      }
-      
-      map.panTo(newLatLng);
-      document.getElementById('last-update').innerHTML = `
-        عرض جغرافیایی: ${lat.toFixed(6)}<br>
-        طول جغرافیایی: ${lng.toFixed(6)}<br>
-        زمان: ${new Date().toLocaleTimeString()}
-      `;
-    }
-
-    // تابع پردازش داده از URL
-    function processURLParams() {
+    // تابع به‌روزرسانی موقعیت
+    function updateMap() {
       const params = new URLSearchParams(window.location.search);
       const lat = parseFloat(params.get('lat'));
       const lng = parseFloat(params.get('lng'));
       
       if (!isNaN(lat) && !isNaN(lng)) {
-        updateLocation(lat, lng);
+        const newPos = [lat, lng];
+        
+        if (!marker) {
+          marker = L.marker(newPos).addTo(map)
+            .bindPopup(`موقعیت خودرو<br>${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        } else {
+          marker.setLatLng(newPos);
+        }
+        
+        map.panTo(newPos);
+        document.getElementById('lat').textContent = lat.toFixed(6);
+        document.getElementById('lng').textContent = lng.toFixed(6);
+        document.getElementById('time').textContent = new Date().toLocaleTimeString();
       }
     }
 
-    // متمرکز کردن نقشه روی مارکر
-    function centerMap() {
-      if (marker) {
-        map.panTo(marker.getLatLng());
-      }
-    }
-
-    // اجرای اولیه
-    processURLParams();
+    // به‌روزرسانی خودکار هر 5 ثانیه
+    updateMap();
+    setInterval(updateMap, 5000);
   </script>
 </body>
 </html>
