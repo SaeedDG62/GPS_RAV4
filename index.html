@@ -89,13 +89,14 @@
 
     // تابع اصلی به‌روزرسانی
     function updateMap() {
-      const params = new URLSearchParams(window.location.search);
-      const lat = parseFloat(params.get('lat'));
-      const lng = parseFloat(params.get('lng'));
+const params = new URLSearchParams(window.location.search);
+const lat = parseFloat(params.get('lat'));
+const lng = parseFloat(params.get('lng'));
 
-      if (!isNaN(lat) && !isNaN(lng)) {
-        createMarker(lat, lng);
-      } else {
+if (isNaN(lat) || isNaN(lng)) {
+    alert('پارامترهای موقعیت نامعتبر هستند');
+    return;
+} else {
         console.warn('پارامترهای موقعیت نامعتبر هستند');
       }
     }
