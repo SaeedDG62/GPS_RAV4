@@ -88,18 +88,35 @@
     }
 
     // تابع اصلی به‌روزرسانی
-    function updateMap() {
-const params = new URLSearchParams(window.location.search);
-const lat = parseFloat(params.get('lat'));
-const lng = parseFloat(params.get('lng'));
-
-if (isNaN(lat) || isNaN(lng)) {
-    alert('پارامترهای موقعیت نامعتبر هستند');
-    return;
-} else {
-        console.warn('پارامترهای موقعیت نامعتبر هستند');
-      }
+   function updateMap() {
+    const startTime = performance.now(); // زمان شروع
+    
+    const params = new URLSearchParams(window.location.search);
+    const lat = parseFloat(params.get('lat'));
+    const lng = parseFloat(params.get('lng'));
+    
+    // اگر مختصات نامعتبر است، پردازش را متوقف کن
+    if (isNaN(lat) || isNaN(lng)) {
+        console.warn("مختصات نامعتبر!");
+        return;
     }
+
+    // حرکت نرم نشانگر با انیمیشن
+    if (marker) {
+        marker.setLatLng([lat, lng], {animate: true, duration: 500});
+    } else {
+        marker = L.marker([lat, lng]).addTo(map);
+    }
+
+    // بهینه‌سازی به‌روزرسانی متن
+    requestAnimationFrame(() => {
+        document.getElementById('lat').textContent = lat.toFixed(6);
+        document.getElementById('lng').textContent = lng.toFixed(6);
+        document.getElementById('time').textContent = new Date().toLocaleTimeString();
+    });
+
+    console.log(`زمان اجرا: ${performance.now() - startTime}ms`);
+}
 
     // شروع برنامه
     initMap();
