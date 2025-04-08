@@ -1,128 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="fa">
 <head>
+  <meta charset="UTF-8">
   <title>GPS Tracker</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    #map { 
+    #map {
       height: 100vh;
       width: 100%;
     }
-    .info-panel {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 1000;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    body {
+      margin: 0;
+      font-family: sans-serif;
     }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <div class="info-panel">
-    <h3>موقعیت خودرو 🚗</h3>
-    <p>آخرین به‌روزرسانی: <span id="time">--:--:--</span></p>
-    <p>عرض جغرافیایی: <span id="lat">---</span></p>
-    <p>طول جغرافیایی: <span id="lng">---</span></p>
-  </div>
 
-  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    // تنظیمات اولیه
-    let map;
-    let marker = null;
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return parseFloat(urlParams.get(param));
+    }
 
-    // تابع مقداردهی اولیه
-    function initMap() {
-      // دریافت پارامترهای URL
-      const params = new URLSearchParams(window.location.search);
-      const lat = parseFloat(params.get('lat'));
-      const lng = parseFloat(params.get('lng'));
+    let lat = getQueryParam("lat");
+    let lng = getQueryParam("lng");
 
-      // تنظیم مرکز اولیه نقشه
-      const defaultCenter = [35.7395, 51.2852];
-      const initialZoom = 15;
+    if (isNaN(lat) || isNaN(lng)) {
+      alert("مختصات نامعتبر هستند.");
+    } else {
+      const map = L.map('map').setView([lat, lng], 15);
 
-      // ایجاد نقشه
-      map = L.map('map').setView(
-        (lat && lng) ? [lat, lng] : defaultCenter,
-        initialZoom
-      );
-
-      // اضافه کردن لایه نقشه
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
 
-      // ایجاد نشانگر در صورت وجود پارامترها
-      if (lat && lng) {
-        createMarker(lat, lng);
-      }
-    }
-
-    // تابع ایجاد نشانگر
-    function createMarker(lat, lng) {
-      if (marker) {
-        marker.remove();
-      }
-      
-      marker = L.marker([lat, lng])
-        .addTo(map)
-        .bindPopup(`
-          <b>موقعیت خودرو</b><br>
-          عرض: ${lat.toFixed(6)}<br>
-          طول: ${lng.toFixed(6)}
-        `)
+      const marker = L.marker([lat, lng]).addTo(map)
+        .bindPopup(`Latitude: ${lat}<br>Longitude: ${lng}`)
         .openPopup();
 
-      // تنظیم دید نقشه
-      map.setView([lat, lng], 15);
-      
-      // به‌روزرسانی اطلاعات
-      document.getElementById('lat').textContent = lat.toFixed(6);
-      document.getElementById('lng').textContent = lng.toFixed(6);
-      document.getElementById('time').textContent = new Date().toLocaleTimeString();
+      // هر 5 ثانیه چک کن که مختصات جدید چی هستن و marker رو جابجا کن
+      setInterval(() => {
+        const newLat = getQueryParam("lat");
+        const newLng = getQueryParam("lng");
+
+        if (!isNaN(newLat) && !isNaN(newLng) && (newLat !== lat || newLng !== lng)) {
+          lat = newLat;
+          lng = newLng;
+          marker.setLatLng([lat, lng])
+                .setPopupContent(`Latitude: ${lat}<br>Longitude: ${lng}`)
+                .openPopup();
+          map.setView([lat, lng]);
+        }
+      }, 5000);
     }
-
-    // تابع اصلی به‌روزرسانی
-   function updateMap() {
-    const startTime = performance.now(); // زمان شروع
-    
-    const params = new URLSearchParams(window.location.search);
-    const lat = parseFloat(params.get('lat'));
-    const lng = parseFloat(params.get('lng'));
-    
-    // اگر مختصات نامعتبر است، پردازش را متوقف کن
-    if (isNaN(lat) || isNaN(lng)) {
-        console.warn("مختصات نامعتبر!");
-        return;
-    }
-
-    // حرکت نرم نشانگر با انیمیشن
-    if (marker) {
-        marker.setLatLng([lat, lng], {animate: true, duration: 500});
-    } else {
-        marker = L.marker([lat, lng]).addTo(map);
-    }
-
-    // بهینه‌سازی به‌روزرسانی متن
-    requestAnimationFrame(() => {
-        document.getElementById('lat').textContent = lat.toFixed(6);
-        document.getElementById('lng').textContent = lng.toFixed(6);
-        document.getElementById('time').textContent = new Date().toLocaleTimeString();
-    });
-
-    console.log(`زمان اجرا: ${performance.now() - startTime}ms`);
-}
-
-    // شروع برنامه
-    initMap();
-    
-    // به‌روزرسانی خودکار هر 3 ثانیه
-    setInterval(updateMap, 3000);
   </script>
 </body>
 </html>
